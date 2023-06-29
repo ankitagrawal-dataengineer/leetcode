@@ -2,3 +2,4 @@ select s1.student_id,s1.student_name,s2.subject_name,count(e.subject_name) as at
 
 
 
+
