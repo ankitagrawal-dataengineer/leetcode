@@ -12,3 +12,5 @@ select r.contest_id,round(count(r.contest_id)*100/(select count(*) from users),2
 
 
 
+
+
