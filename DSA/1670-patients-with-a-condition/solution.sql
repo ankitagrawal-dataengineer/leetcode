@@ -1,1 +1,1 @@
-select * from patients where conditions like 'DIAB1%' OR conditions like '% DIAB1%'
+select * from patients where conditions like 'DIAB1%' OR CONDITIONS LIKE '% DIAB1%'
