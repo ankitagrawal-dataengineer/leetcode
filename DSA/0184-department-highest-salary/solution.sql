@@ -1,9 +1,10 @@
-SELECT t1.Department, t1.Employee, t1.Salary
-FROM (SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary
-,DENSE_RANK() OVER(PARTITION BY d.id ORDER BY salary DESC) AS rk
-FROM Department AS d
-JOIN Employee AS e ON E.departmentId = d.id) AS t1
-WHERE rk = 1
+select t1.Department,t1.Employee,t1.Salary from
+(select d.name as Department,e.name as Employee,e.salary as Salary,
+dense_rank() over(partition by d.id order by salary desc) as rk
+from Employee e join department d on e.departmentId = d.id) as t1
+where rk=1
+
+
 
 
 
