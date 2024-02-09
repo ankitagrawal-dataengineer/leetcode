@@ -1,6 +1,4 @@
-select distinct i1.num as ConsecutiveNums
-from logs i1, logs i2, logs i3
-where i1.id = i2.id+1 and
-i2.id = i3.id+1 and
-i1.num = i2.num and
-i2.num = i3.num
+select distinct l1.num as ConsecutiveNums 
+from logs l1,logs l2,logs l3
+where l1.id=l2.id+1 and l2.id=l3.id+1 and
+l1.num=l2.num and l2.num=l3.num
