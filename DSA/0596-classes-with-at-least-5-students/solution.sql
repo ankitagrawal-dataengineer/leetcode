@@ -1,3 +1,3 @@
 select class from courses
-group by class
-having count(class)>=5;
+group by class having
+count(*)>=5;
