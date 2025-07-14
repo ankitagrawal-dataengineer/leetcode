@@ -1,14 +1,11 @@
-with cte as
+with cte as 
 (
-    select e.id,e.name employee,
-    e.salary salary,
-    d.name department,dense_rank() 
-    over(partition by d.id 
-    order by e.salary desc) 'rnk'
-    from employee e join
-    department d on e.departmentid=
-    d.id
+    select d.name as Department,e.name as Employee,e.salary as Salary
+    ,dense_rank() over(partition by d.name order by e.salary desc) as rk
+    from employee e join department d 
+    on e.departmentId = d.id
 )
 
-select department,employee,salary
-from cte where rnk=1;
+select Department,Employee,Salary
+from cte where rk=1;
+
