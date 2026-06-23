@@ -4,36 +4,20 @@ class Solution(object):
         :type nums: List[int]
         :rtype: List[int]
         """
-        neg,pos=[],[]
-        for num in nums:
-            if num<0:
-                neg.append(num)
-            else:
-                pos.append(num)
-        if len(neg)==0:
-            return [x*x for x in pos]
-        elif len(pos)==0:
-            res=[x*x for x in neg]
-            res.reverse()
-            return res
-        else:
-            neg=[x*x for x in neg][::-1]
-            pos=[x*x for x in pos]
-            n,m=len(neg),len(pos)
-            res=[]
-            i=j=0
-            while i<n and j<m:
-                if neg[i]<=pos[j]:
-                    res.append(neg[i])
-                    i+=1
-                else:
-                    res.append(pos[j])
-                    j+=1
-            while i<n:
-                res.append(neg[i])
+        i=0
+        n=len(nums)
+        j=n-1
+        k=n-1
+        a=[0]*n
+        while i<=j:
+            isq=nums[i]*nums[i]
+            jsq=nums[j]*nums[j]
+            if isq>=jsq:
+                a[k]=isq
                 i+=1
-            while j<m:
-                res.append(pos[j])
-                j+=1
-            return res
+            else:
+                a[k]=jsq
+                j-=1
+            k-=1
+        return a
 
