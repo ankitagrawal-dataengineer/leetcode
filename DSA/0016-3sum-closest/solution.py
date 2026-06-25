@@ -10,19 +10,20 @@ class Solution(object):
         max_diff=float('inf')
         res_sum=0
         for i in range(n-2):
+            if i>0 and nums[i]==nums[i-1]:
+                continue
             left=i+1
             right=n-1
             while left<right:
-                total = nums[i]+nums[left]+nums[right]
-                diff=abs(total-target)
+                s=nums[i]+nums[left]+nums[right]
+                diff=abs(s-target)
                 if diff<max_diff:
                     max_diff=diff
-                    res_sum=total
-                if total==target:
+                    res_sum=s
+                elif s==target:
                     return res_sum
-                elif total>target:
-                    right-=1
-                else:
+                elif s<target:
                     left+=1
+                else:
+                    right-=1
         return res_sum
-    
