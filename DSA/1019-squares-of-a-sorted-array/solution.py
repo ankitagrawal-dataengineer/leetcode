@@ -4,10 +4,8 @@ class Solution(object):
         :type nums: List[int]
         :rtype: List[int]
         """
-        i=0
         n=len(nums)
-        j=n-1
-        k=n-1
+        i,j,k=0,n-1,n-1
         a=[0]*n
         while i<=j:
             isq=nums[i]*nums[i]
@@ -15,7 +13,7 @@ class Solution(object):
             if isq>=jsq:
                 a[k]=isq
                 i+=1
-            else:
+            elif isq<=jsq:
                 a[k]=jsq
                 j-=1
             k-=1
