@@ -13,7 +13,7 @@ class Solution(object):
             if isq<=jsq:
                 a[k]=jsq
                 j-=1
-            elif isq>=jsq:
+            else:
                 a[k]=isq
                 i+=1
             k-=1
