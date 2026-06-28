@@ -4,17 +4,20 @@ class Solution(object):
         :type s: str
         :rtype: int
         """
-        left = 0
-        last_index = {}
-        max_len = 0
-
-        for right, ch in enumerate(s):
-            # if char already in window, move left pointer
-            if ch in last_index and last_index[ch] >= left:
-                left = last_index[ch] + 1
-
-            last_index[ch] = right
-            max_len = max(max_len, right - left + 1)
-
-        return max_len
+        low=0
+        n=len(s)
+        freq={}
+        res=0
+        for high in range(n):
+            freq[s[high]]=freq.get(s[high],0)+1
+            k=high-low+1
+            while len(freq)<k:
+                freq[s[low]]-=1
+                if freq[s[low]]==0:
+                    del freq[s[low]]
+                low+=1
+                k=high-low+1
+            length=high-low+1
+            res=max(res,length)
+        return res 
 
