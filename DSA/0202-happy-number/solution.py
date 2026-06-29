@@ -12,7 +12,7 @@ class Solution(object):
         """
         :type n: int
         :rtype: bool
-        """
+        """ 
         slow=fast=n
         while fast!=1:
             slow=self.fun(slow)
