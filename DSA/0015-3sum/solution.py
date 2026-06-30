@@ -8,7 +8,7 @@ class Solution(object):
         n=len(nums)
         res=[]
         for i in range(n-2):
-            if i>0 and nums[i]==nums[i-1]:
+            if i>0 and nums[i] == nums[i-1]:
                 continue
             left=i+1
             right=n-1
@@ -28,4 +28,3 @@ class Solution(object):
                 else:
                     right-=1
         return res
-
