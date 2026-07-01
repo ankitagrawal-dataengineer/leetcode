@@ -6,9 +6,10 @@ class Solution(object):
         """
         nums.sort()
         n=len(nums)
-        res=[]
+        s=0
+        a=[]
         for i in range(n-2):
-            if i>0 and nums[i] == nums[i-1]:
+            if i>0 and nums[i]==nums[i-1]:
                 continue
             left=i+1
             right=n-1
@@ -16,7 +17,7 @@ class Solution(object):
             while left<right:
                 s=nums[left]+nums[right]
                 if s==target:
-                    res.append([nums[i],nums[left],nums[right]])
+                    a.append([nums[i],nums[left],nums[right]])
                     left+=1
                     right-=1
                     while left<right and nums[left]==nums[left-1]:
@@ -25,6 +26,6 @@ class Solution(object):
                         right-=1
                 elif s<target:
                     left+=1
-                else:
-                    right-=1
-        return res
+                elif s>target:
+                    right-=1    
+        return a
