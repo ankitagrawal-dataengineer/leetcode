@@ -11,18 +11,16 @@ class Solution(object):
         """
         if not head:
             return head
-
         off=head
         cm=head.next
         while cm:
             if cm.val==off.val:
                 cm=cm.next
             else:
-                off.next=cm
+                off.next.val=cm.val
                 off=off.next
                 cm=cm.next
         off.next=None
         return head
 
 
-        
