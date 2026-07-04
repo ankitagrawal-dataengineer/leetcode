@@ -5,16 +5,17 @@ class Solution(object):
         :rtype: List[int]
         """
         n=len(nums)
-        i,j=0,n-1
-        a=[0]*n
+        i=0
+        j=n-1
         k=n-1
+        a=[0]*n
         while i<=j:
             isq=nums[i]*nums[i]
             jsq=nums[j]*nums[j]
-            if isq>jsq:
+            if isq>=jsq:
                 a[k]=isq
                 i+=1
-            else:
+            elif jsq>=isq:
                 a[k]=jsq
                 j-=1
             k-=1
