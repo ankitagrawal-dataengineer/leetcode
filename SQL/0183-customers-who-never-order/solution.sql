@@ -1,4 +1,3 @@
 select c.name as Customers
-from customers c left join orders o
-on c.id = o.customerid
-where o.customerid is null;
+from customers c
+where not exists (select 1 from orders o where o.customerid=c.id);
