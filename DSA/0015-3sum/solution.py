@@ -6,7 +6,6 @@ class Solution(object):
         """
         nums.sort()
         n=len(nums)
-        s=0
         a=[]
         for i in range(n-2):
             if i>0 and nums[i]==nums[i-1]:
@@ -26,6 +25,6 @@ class Solution(object):
                         right-=1
                 elif s<target:
                     left+=1
-                elif s>target:
-                    right-=1    
+                else:
+                    right-=1
         return a
