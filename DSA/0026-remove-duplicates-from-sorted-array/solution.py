@@ -4,8 +4,8 @@ class Solution(object):
         :type nums: List[int]
         :rtype: int
         """
-        cm=1
         off=0
+        cm=1
         n=len(nums)
         while cm<n:
             if nums[cm]==nums[cm-1]:
