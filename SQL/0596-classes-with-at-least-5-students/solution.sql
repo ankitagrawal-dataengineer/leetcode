@@ -1,3 +1,5 @@
-select class from courses
+# Write your MySQL query statement below
+SELECT class
+from courses
 group by class
-having count(class)>=5;
+having count(*)>=5;
