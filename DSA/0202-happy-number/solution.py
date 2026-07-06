@@ -1,12 +1,12 @@
 class Solution(object):
-
     def fun(self,n):
         s=0
         while n>0:
-            d=n%10
-            s+=d*d
-            n//=10
+            r=n%10
+            s=s+r*r
+            n=n//10
         return s
+
 
     def isHappy(self, n):
         """
@@ -21,4 +21,3 @@ class Solution(object):
             if slow==fast and slow!=1:
                 return False
         return True
-
