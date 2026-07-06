@@ -4,7 +4,8 @@ class Solution(object):
         :type fruits: List[int]
         :rtype: int
         """
-        low,n=0,len(fruits)
+        n=len(fruits)
+        low=0
         freq={}
         res=0
         for high in range(n):
