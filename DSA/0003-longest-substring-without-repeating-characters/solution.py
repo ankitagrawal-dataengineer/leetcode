@@ -19,5 +19,6 @@ class Solution(object):
                 k=high-low+1
             length=high-low+1
             res=max(res,length)
-        return res 
+        return res
+
 
