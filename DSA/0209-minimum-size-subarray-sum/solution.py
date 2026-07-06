@@ -5,7 +5,8 @@ class Solution(object):
         :type nums: List[int]
         :rtype: int
         """
-        low,n,window_sum=0,len(nums),0
+        n=len(nums)
+        low,window_sum=0,0
         res=float('inf')
         for high in range(n):
             window_sum+=nums[high]
