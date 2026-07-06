@@ -13,4 +13,4 @@ class Solution(object):
                 while slow!=fast:
                     slow=nums[slow]
                     fast=nums[fast]
-                return fast
+                return slow
