@@ -1,5 +1,0 @@
-select id,case 
-when p_id is null then 'Root'
-when p_id in (select p_id from tree) and id in (select p_id from tree) then 'Inner'
-else 'Leaf' end type
-from tree;
