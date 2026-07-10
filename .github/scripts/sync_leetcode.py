@@ -83,7 +83,14 @@ def post_graphql(http, headers, query, variables):
         json={"query": query, "variables": variables},
         timeout=30,
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        body = response.text.strip()
+        detail = f": {body[:500]}" if body else ""
+        raise LeetCodeSyncError(
+            f"LeetCode GraphQL HTTP {response.status_code} error{detail}"
+        ) from exc
     payload = response.json()
     if payload.get("errors"):
         messages = "; ".join(error.get("message", str(error)) for error in payload["errors"])
@@ -92,68 +99,42 @@ def post_graphql(http, headers, query, variables):
 
 
 def fetch_submission_page(http, headers, offset, limit):
-    queries = [
-        (
-            "submissionList",
-            """
-            query submissions($offset: Int!, $limit: Int!, $slug: String) {
-              submissionList(offset: $offset, limit: $limit, questionSlug: $slug) {
-                hasNext
-                submissions {
-                  id
-                  lang
-                  timestamp
-                  statusDisplay
-                  title
-                  titleSlug
-                }
-              }
-            }
-            """,
-        ),
-        (
-            "questionSubmissionList",
-            """
-            query submissions($offset: Int!, $limit: Int!, $slug: String) {
-              questionSubmissionList(offset: $offset, limit: $limit, questionSlug: $slug) {
-                hasNext
-                submissions {
-                  id
-                  lang
-                  langName
-                  timestamp
-                  statusDisplay
-                  title
-                  titleSlug
-                }
-              }
-            }
-            """,
-        ),
-    ]
+    query = """
+    query submissions($offset: Int!, $limit: Int!, $slug: String) {
+      submissionList(offset: $offset, limit: $limit, questionSlug: $slug) {
+        hasNext
+        submissions {
+          id
+          lang
+          timestamp
+          statusDisplay
+          title
+          titleSlug
+        }
+      }
+    }
+    """
+    data = post_graphql(
+        http,
+        headers,
+        query,
+        {"offset": offset, "limit": limit, "slug": None},
+    )
 
-    last_error = None
-    for field_name, query in queries:
-        try:
-            data = post_graphql(
-                http,
-                headers,
-                query,
-                {"offset": offset, "limit": limit, "slug": None},
-            )
-        except LeetCodeSyncError as exc:
-            last_error = exc
-            continue
-
-        page = data.get(field_name)
-        if isinstance(page, dict) and isinstance(page.get("submissions"), list):
-            return page
-        last_error = LeetCodeSyncError(
-            f"LeetCode response did not include an iterable {field_name}.submissions list. "
+    page = data.get("submissionList")
+    if not isinstance(page, dict):
+        raise LeetCodeSyncError(
+            "LeetCode response did not include submissionList. "
             "Refresh LEETCODE_SESSION and LEETCODE_CSRF_TOKEN if this continues."
         )
 
-    raise last_error or LeetCodeSyncError("Unable to fetch submissions from LeetCode.")
+    if not isinstance(page.get("submissions"), list):
+        raise LeetCodeSyncError(
+            "LeetCode did not return a submissions list. "
+            "Your LEETCODE_SESSION may be expired or invalid; refresh the GitHub secrets and rerun the workflow."
+        )
+
+    return page
 
 
 def fetch_submission_details(http, headers, submission_id):
@@ -213,7 +194,7 @@ def main():
 
     for page_index in range(max_pages):
         offset = page_index * page_size
-        print(f"Fetching LeetCode submissions at offset {offset}...")
+        print(f"Fetching LeetCode submissions at offset {offset}...", flush=True)
         page = fetch_submission_page(http, headers, offset, page_size)
         submissions = page.get("submissions", [])
 
