@@ -49,6 +49,22 @@ def required_env(name):
     return value
 
 
+def cookie_secret_value(raw_value, cookie_name):
+    value = raw_value.strip().strip('"').strip("'")
+    match = re.search(rf"(?:^|[;\s]){re.escape(cookie_name)}=([^;]+)", value)
+    if match:
+        return match.group(1).strip()
+    return value
+
+
+def describe_graphql_value(value):
+    if isinstance(value, dict):
+        return "object with keys: " + ", ".join(sorted(value.keys()))
+    if isinstance(value, list):
+        return f"list with {len(value)} item(s)"
+    return type(value).__name__
+
+
 def slugify(value):
     value = value.strip().lower()
     value = re.sub(r"[^a-z0-9]+", "-", value)
@@ -102,10 +118,12 @@ def fetch_submission_page(http, headers, offset, limit):
     query = """
     query submissions($offset: Int!, $limit: Int!, $slug: String) {
       submissionList(offset: $offset, limit: $limit, questionSlug: $slug) {
+                lastKey
         hasNext
         submissions {
           id
           lang
+                    langName
           timestamp
           statusDisplay
           title
@@ -124,17 +142,40 @@ def fetch_submission_page(http, headers, offset, limit):
     page = data.get("submissionList")
     if not isinstance(page, dict):
         raise LeetCodeSyncError(
-            "LeetCode response did not include submissionList. "
-            "Refresh LEETCODE_SESSION and LEETCODE_CSRF_TOKEN if this continues."
+            "LeetCode response did not include submissionList "
+            f"(got {describe_graphql_value(page)}). "
+            "Refresh LEETCODE_SESSION and LEETCODE_CSRF_TOKEN if authentication fails."
         )
 
-    if not isinstance(page.get("submissions"), list):
+    submissions = page.get("submissions")
+    if not isinstance(submissions, list):
         raise LeetCodeSyncError(
-            "LeetCode did not return a submissions list. "
-            "Your LEETCODE_SESSION may be expired or invalid; refresh the GitHub secrets and rerun the workflow."
+            "LeetCode did not return submissionList.submissions "
+            f"(submissionList is {describe_graphql_value(page)}; "
+            f"submissions is {describe_graphql_value(submissions)})."
         )
 
     return page
+
+
+def validate_login(http, headers):
+    query = """
+    query userStatus {
+      userStatus {
+        isSignedIn
+        username
+      }
+    }
+    """
+    data = post_graphql(http, headers, query, {})
+    user_status = data.get("userStatus") or {}
+    if not user_status.get("isSignedIn"):
+        raise LeetCodeSyncError(
+            "LeetCode authentication failed: LEETCODE_SESSION is missing, expired, "
+            "or was copied in the wrong format. Refresh LEETCODE_SESSION and "
+            "LEETCODE_CSRF_TOKEN from a signed-in browser session."
+        )
+    return user_status.get("username") or "signed-in user"
 
 
 def fetch_submission_details(http, headers, submission_id):
@@ -178,8 +219,8 @@ def write_submission(destination, submission, details):
 
 
 def main():
-    csrf_token = required_env("LEETCODE_CSRF_TOKEN")
-    session_cookie = required_env("LEETCODE_SESSION")
+    csrf_token = cookie_secret_value(required_env("LEETCODE_CSRF_TOKEN"), "csrftoken")
+    session_cookie = cookie_secret_value(required_env("LEETCODE_SESSION"), "LEETCODE_SESSION")
     destination = Path(os.environ.get("DESTINATION_FOLDER", "DSA"))
     max_pages = int(os.environ.get("MAX_PAGES", "10"))
     page_size = int(os.environ.get("PAGE_SIZE", "20"))
@@ -191,6 +232,9 @@ def main():
     seen_problem_lang = set()
     written = 0
     checked = 0
+
+    username = validate_login(http, headers)
+    print(f"Authenticated to LeetCode as {username}.", flush=True)
 
     for page_index in range(max_pages):
         offset = page_index * page_size
