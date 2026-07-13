@@ -9,6 +9,7 @@ import requests
 
 GRAPHQL_URL = "https://leetcode.com/graphql/"
 BASE_URL = "https://leetcode.com"
+SUBMISSIONS_URL = f"{BASE_URL}/api/submissions/"
 
 EXTENSIONS = {
     "python": "py",
@@ -51,7 +52,8 @@ def required_env(name):
 
 def cookie_secret_value(raw_value, cookie_name):
     value = raw_value.strip().strip('"').strip("'")
-    match = re.search(rf"(?:^|[;\s]){re.escape(cookie_name)}=([^;]+)", value)
+    value = re.sub(r"^cookie:\s*", "", value, flags=re.IGNORECASE)
+    match = re.search(rf"(?:^|[;\s]){re.escape(cookie_name)}=([^;]+)", value, re.IGNORECASE)
     if match:
         return match.group(1).strip()
     return value
@@ -63,6 +65,16 @@ def describe_graphql_value(value):
     if isinstance(value, list):
         return f"list with {len(value)} item(s)"
     return type(value).__name__
+
+
+def secret_format_description(raw_value, cookie_name):
+    value = raw_value.strip().strip('"').strip("'")
+    parsed_value = cookie_secret_value(value, cookie_name)
+    if re.search(rf"(?:^|[;\s]){re.escape(cookie_name)}=", value, re.IGNORECASE):
+        format_name = "cookie header"
+    else:
+        format_name = "raw value"
+    return f"{format_name}, parsed length {len(parsed_value)}"
 
 
 def slugify(value):
@@ -83,13 +95,21 @@ def extension_for(lang):
 
 def graphql_headers(session_cookie, csrf_token):
     return {
+        "accept": "application/json",
         "content-type": "application/json",
         "origin": BASE_URL,
-        "referer": BASE_URL,
-        "user-agent": "Mozilla/5.0 leetcode-sync-workflow",
+        "referer": f"{BASE_URL}/problemset/",
+        "user-agent": "Mozilla/5.0 (compatible; leetcode-sync-workflow)",
+        "x-requested-with": "XMLHttpRequest",
         "x-csrftoken": csrf_token,
         "cookie": f"csrftoken={csrf_token}; LEETCODE_SESSION={session_cookie}",
     }
+
+
+def install_cookies(http, session_cookie, csrf_token):
+    for domain in ("leetcode.com", ".leetcode.com"):
+        http.cookies.set("LEETCODE_SESSION", session_cookie, domain=domain, path="/")
+        http.cookies.set("csrftoken", csrf_token, domain=domain, path="/")
 
 
 def post_graphql(http, headers, query, variables):
@@ -115,47 +135,123 @@ def post_graphql(http, headers, query, variables):
 
 
 def fetch_submission_page(http, headers, offset, limit):
-    query = """
-    query submissions($offset: Int!, $limit: Int!, $slug: String) {
-      submissionList(offset: $offset, limit: $limit, questionSlug: $slug) {
+    queries = [
+        (
+            "submissionList",
+            """
+            query submissions($offset: Int!, $limit: Int!, $slug: String) {
+              submissionList(offset: $offset, limit: $limit, questionSlug: $slug) {
                 lastKey
-        hasNext
-        submissions {
-          id
-          lang
-                    langName
-          timestamp
-          statusDisplay
-          title
-          titleSlug
-        }
-      }
-    }
-    """
-    data = post_graphql(
-        http,
-        headers,
-        query,
-        {"offset": offset, "limit": limit, "slug": None},
-    )
+                hasNext
+                submissions {
+                  id
+                  lang
+                  langName
+                  timestamp
+                  statusDisplay
+                  title
+                  titleSlug
+                }
+              }
+            }
+            """,
+        ),
+        (
+            "questionSubmissionList",
+            """
+            query submissions($offset: Int!, $limit: Int!, $slug: String) {
+              questionSubmissionList(offset: $offset, limit: $limit, questionSlug: $slug) {
+                lastKey
+                hasNext
+                submissions {
+                  id
+                  lang
+                  langName
+                  timestamp
+                  statusDisplay
+                  title
+                  titleSlug
+                }
+              }
+            }
+            """,
+        ),
+    ]
 
-    page = data.get("submissionList")
-    if not isinstance(page, dict):
-        raise LeetCodeSyncError(
-            "LeetCode response did not include submissionList "
-            f"(got {describe_graphql_value(page)}). "
-            "Refresh LEETCODE_SESSION and LEETCODE_CSRF_TOKEN if authentication fails."
-        )
+    last_error = None
+    for field_name, query in queries:
+        try:
+            data = post_graphql(
+                http,
+                headers,
+                query,
+                {"offset": offset, "limit": limit, "slug": None},
+            )
+        except LeetCodeSyncError as exc:
+            last_error = exc
+            continue
 
-    submissions = page.get("submissions")
-    if not isinstance(submissions, list):
-        raise LeetCodeSyncError(
-            "LeetCode did not return submissionList.submissions "
-            f"(submissionList is {describe_graphql_value(page)}; "
+        page = data.get(field_name)
+        submissions = page.get("submissions") if isinstance(page, dict) else None
+        if isinstance(page, dict) and isinstance(submissions, list):
+            return page
+        last_error = LeetCodeSyncError(
+            f"LeetCode response did not include an iterable {field_name}.submissions list "
+            f"({field_name} is {describe_graphql_value(page)}; "
             f"submissions is {describe_graphql_value(submissions)})."
         )
 
-    return page
+    try:
+        return fetch_rest_submission_page(http, headers, offset, limit)
+    except LeetCodeSyncError as exc:
+        if last_error:
+            raise LeetCodeSyncError(f"{last_error} REST fallback also failed: {exc}") from exc
+        raise
+
+
+def fetch_rest_submission_page(http, headers, offset, limit):
+    response = http.get(
+        SUBMISSIONS_URL,
+        headers={key: value for key, value in headers.items() if key != "content-type"},
+        params={"offset": offset, "limit": limit},
+        timeout=30,
+    )
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        body = response.text.strip()
+        detail = f": {body[:500]}" if body else ""
+        raise LeetCodeSyncError(f"LeetCode REST HTTP {response.status_code} error{detail}") from exc
+
+    payload = response.json()
+    submissions = payload.get("submissions_dump")
+    if not isinstance(submissions, list):
+        raise LeetCodeSyncError(
+            "LeetCode REST response did not include submissions_dump "
+            f"(got {describe_graphql_value(submissions)}; response is {describe_graphql_value(payload)})."
+        )
+
+    normalized = []
+    for submission in submissions:
+        normalized.append(
+            {
+                "id": submission.get("id"),
+                "lang": submission.get("lang") or submission.get("lang_name"),
+                "langName": submission.get("lang_name") or submission.get("lang"),
+                "timestamp": submission.get("timestamp"),
+                "statusDisplay": submission.get("status_display") or submission.get("statusDisplay"),
+                "title": submission.get("title"),
+                "titleSlug": submission.get("title_slug") or submission.get("titleSlug"),
+                "code": submission.get("code"),
+                "questionId": submission.get("question_id") or submission.get("questionId"),
+            }
+        )
+
+    return {
+        "hasNext": bool(payload.get("has_next")),
+        "lastKey": payload.get("last_key"),
+        "submissions": normalized,
+    }
 
 
 def validate_login(http, headers):
@@ -169,13 +265,7 @@ def validate_login(http, headers):
     """
     data = post_graphql(http, headers, query, {})
     user_status = data.get("userStatus") or {}
-    if not user_status.get("isSignedIn"):
-        raise LeetCodeSyncError(
-            "LeetCode authentication failed: LEETCODE_SESSION is missing, expired, "
-            "or was copied in the wrong format. Refresh LEETCODE_SESSION and "
-            "LEETCODE_CSRF_TOKEN from a signed-in browser session."
-        )
-    return user_status.get("username") or "signed-in user"
+    return user_status.get("username") if user_status.get("isSignedIn") else None
 
 
 def fetch_submission_details(http, headers, submission_id):
@@ -219,8 +309,10 @@ def write_submission(destination, submission, details):
 
 
 def main():
-    csrf_token = cookie_secret_value(required_env("LEETCODE_CSRF_TOKEN"), "csrftoken")
-    session_cookie = cookie_secret_value(required_env("LEETCODE_SESSION"), "LEETCODE_SESSION")
+    raw_csrf_token = required_env("LEETCODE_CSRF_TOKEN")
+    raw_session_cookie = required_env("LEETCODE_SESSION")
+    csrf_token = cookie_secret_value(raw_csrf_token, "csrftoken")
+    session_cookie = cookie_secret_value(raw_session_cookie, "LEETCODE_SESSION")
     destination = Path(os.environ.get("DESTINATION_FOLDER", "DSA"))
     max_pages = int(os.environ.get("MAX_PAGES", "10"))
     page_size = int(os.environ.get("PAGE_SIZE", "20"))
@@ -228,13 +320,27 @@ def main():
     destination.mkdir(parents=True, exist_ok=True)
     headers = graphql_headers(session_cookie, csrf_token)
     http = requests.Session()
+    install_cookies(http, session_cookie, csrf_token)
 
     seen_problem_lang = set()
     written = 0
     checked = 0
 
-    username = validate_login(http, headers)
-    print(f"Authenticated to LeetCode as {username}.", flush=True)
+    print(
+        "Secret formats: "
+        f"LEETCODE_SESSION is {secret_format_description(raw_session_cookie, 'LEETCODE_SESSION')}; "
+        f"LEETCODE_CSRF_TOKEN is {secret_format_description(raw_csrf_token, 'csrftoken')}.",
+        flush=True,
+    )
+    try:
+        username = validate_login(http, headers)
+    except LeetCodeSyncError as exc:
+        username = None
+        print(f"LeetCode userStatus check failed: {exc}", flush=True)
+    if username:
+        print(f"Authenticated to LeetCode as {username}.", flush=True)
+    else:
+        print("LeetCode userStatus did not report a signed-in user; trying submissions endpoints.", flush=True)
 
     for page_index in range(max_pages):
         offset = page_index * page_size
@@ -251,7 +357,18 @@ def main():
                 continue
             seen_problem_lang.add(key)
 
-            details = fetch_submission_details(http, headers, submission["id"])
+            if submission.get("code"):
+                details = {
+                    "code": submission["code"],
+                    "lang": submission.get("lang") or submission.get("langName"),
+                    "question": {
+                        "questionId": submission.get("questionId"),
+                        "title": submission.get("title"),
+                        "titleSlug": submission.get("titleSlug"),
+                    },
+                }
+            else:
+                details = fetch_submission_details(http, headers, submission["id"])
             changed, path = write_submission(destination, submission, details)
             checked += 1
             if changed:
