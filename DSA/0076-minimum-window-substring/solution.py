@@ -29,4 +29,3 @@ class Solution(object):
         else:
             return s[start:start+res]
 
-

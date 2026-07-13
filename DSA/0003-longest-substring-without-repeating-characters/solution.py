@@ -21,4 +21,3 @@ class Solution(object):
             res=max(res,length)
         return res
 
-
