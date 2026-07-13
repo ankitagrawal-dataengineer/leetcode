@@ -43,6 +43,14 @@ class LeetCodeSyncError(RuntimeError):
     pass
 
 
+def authentication_error(detail):
+    return LeetCodeSyncError(
+        f"LeetCode authentication failed: {detail} "
+        "Refresh the LEETCODE_SESSION and LEETCODE_CSRF_TOKEN repository secrets "
+        "from a currently signed-in leetcode.com browser session."
+    )
+
+
 def required_env(name):
     value = os.environ.get(name)
     if not value:
@@ -124,6 +132,10 @@ def post_graphql(http, headers, query, variables):
     except requests.HTTPError as exc:
         body = response.text.strip()
         detail = f": {body[:500]}" if body else ""
+        if response.status_code in (401, 403):
+            raise authentication_error(
+                f"GraphQL returned HTTP {response.status_code}{detail}."
+            ) from exc
         raise LeetCodeSyncError(
             f"LeetCode GraphQL HTTP {response.status_code} error{detail}"
         ) from exc
@@ -175,6 +187,11 @@ def fetch_submission_page(http, headers, offset, limit):
         submissions = page.get("submissions") if isinstance(page, dict) else None
         if isinstance(page, dict) and isinstance(submissions, list):
             return page
+        if isinstance(page, dict) and submissions is None:
+            last_error = authentication_error(
+                f"GraphQL returned {field_name}.submissions as null."
+            )
+            continue
         last_error = LeetCodeSyncError(
             f"LeetCode response did not include an iterable {field_name}.submissions list "
             f"({field_name} is {describe_graphql_value(page)}; "
@@ -201,6 +218,8 @@ def fetch_rest_submission_page(http, headers, offset, limit):
     except requests.HTTPError as exc:
         body = response.text.strip()
         detail = f": {body[:500]}" if body else ""
+        if response.status_code in (401, 403):
+            raise authentication_error(f"REST returned HTTP {response.status_code}{detail}.") from exc
         raise LeetCodeSyncError(f"LeetCode REST HTTP {response.status_code} error{detail}") from exc
 
     payload = response.json()
