@@ -101,6 +101,10 @@ def extension_for(lang):
     return EXTENSIONS.get((lang or "").replace(" ", "").lower(), "txt")
 
 
+def submission_language(submission):
+    return submission.get("lang") or submission.get("langName")
+
+
 def graphql_headers(session_cookie, csrf_token):
     return {
         "accept": "application/json",
@@ -157,7 +161,6 @@ def fetch_submission_page(http, headers, offset, limit):
                 hasNext
                 submissions {
                   id
-                  lang
                   langName
                   timestamp
                   statusDisplay
@@ -272,7 +275,6 @@ def fetch_submission_details(http, headers, submission_id):
     query submissionDetails($submissionId: Int!) {
       submissionDetails(submissionId: $submissionId) {
         code
-        lang
         question {
           questionId
           title
@@ -290,7 +292,7 @@ def fetch_submission_details(http, headers, submission_id):
 
 def write_submission(destination, submission, details):
     question = details.get("question") or {}
-    lang = details.get("lang") or submission.get("lang") or submission.get("langName")
+    lang = details.get("lang") or submission_language(submission)
     folder = destination / problem_folder(
         question.get("questionId"),
         question.get("titleSlug") or submission.get("titleSlug"),
@@ -351,7 +353,7 @@ def main():
             if submission.get("statusDisplay") != "Accepted":
                 continue
 
-            key = (submission.get("titleSlug") or submission.get("title"), submission.get("lang"))
+            key = (submission.get("titleSlug") or submission.get("title"), submission_language(submission))
             if key in seen_problem_lang:
                 continue
             seen_problem_lang.add(key)
@@ -359,7 +361,7 @@ def main():
             if submission.get("code"):
                 details = {
                     "code": submission["code"],
-                    "lang": submission.get("lang") or submission.get("langName"),
+                    "lang": submission_language(submission),
                     "question": {
                         "questionId": submission.get("questionId"),
                         "title": submission.get("title"),
