@@ -139,28 +139,8 @@ def fetch_submission_page(http, headers, offset, limit):
         (
             "submissionList",
             """
-            query submissions($offset: Int!, $limit: Int!, $slug: String) {
-              submissionList(offset: $offset, limit: $limit, questionSlug: $slug) {
-                lastKey
-                hasNext
-                submissions {
-                  id
-                  lang
-                  langName
-                  timestamp
-                  statusDisplay
-                  title
-                  titleSlug
-                }
-              }
-            }
-            """,
-        ),
-        (
-            "questionSubmissionList",
-            """
-            query submissions($offset: Int!, $limit: Int!, $slug: String) {
-              questionSubmissionList(offset: $offset, limit: $limit, questionSlug: $slug) {
+                        query submissions($offset: Int!, $limit: Int!) {
+                            submissionList(offset: $offset, limit: $limit) {
                 lastKey
                 hasNext
                 submissions {
@@ -185,7 +165,7 @@ def fetch_submission_page(http, headers, offset, limit):
                 http,
                 headers,
                 query,
-                {"offset": offset, "limit": limit, "slug": None},
+                {"offset": offset, "limit": limit},
             )
         except LeetCodeSyncError as exc:
             last_error = exc
