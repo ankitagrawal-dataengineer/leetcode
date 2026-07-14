@@ -1,7 +1,8 @@
-select max(num) as num
+select 
+     max(num) as num
 from (
-    select num 
+    select num
     from mynumbers 
-    group by num
+    group by num 
     having count(*)=1
 ) t;
