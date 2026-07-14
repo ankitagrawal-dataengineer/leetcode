@@ -43,6 +43,10 @@ class LeetCodeSyncError(RuntimeError):
     pass
 
 
+class MissingSubmissionCodeError(LeetCodeSyncError):
+    pass
+
+
 def authentication_error(detail):
     return LeetCodeSyncError(
         f"LeetCode authentication failed: {detail} "
@@ -286,7 +290,7 @@ def fetch_submission_details(http, headers, submission_id):
     data = post_graphql(http, headers, query, {"submissionId": int(submission_id)})
     details = data.get("submissionDetails")
     if not isinstance(details, dict) or not details.get("code"):
-        raise LeetCodeSyncError(f"Could not fetch code for submission {submission_id}.")
+        raise MissingSubmissionCodeError(f"Could not fetch code for submission {submission_id}.")
     return details
 
 
@@ -326,6 +330,7 @@ def main():
     seen_problem_lang = set()
     written = 0
     checked = 0
+    skipped = 0
 
     print(
         "Secret formats: "
@@ -369,7 +374,13 @@ def main():
                     },
                 }
             else:
-                details = fetch_submission_details(http, headers, submission["id"])
+                try:
+                    details = fetch_submission_details(http, headers, submission["id"])
+                except MissingSubmissionCodeError as exc:
+                    skipped += 1
+                    title = submission.get("titleSlug") or submission.get("title") or "unknown problem"
+                    print(f"Skipped {title}: {exc}", flush=True)
+                    continue
             changed, path = write_submission(destination, submission, details)
             checked += 1
             if changed:
@@ -380,7 +391,7 @@ def main():
         if not page.get("hasNext"):
             break
 
-    print(f"Checked {checked} accepted submissions; wrote {written} file(s).")
+    print(f"Checked {checked} accepted submissions; wrote {written} file(s); skipped {skipped} without code.")
 
 
 if __name__ == "__main__":
