@@ -361,7 +361,6 @@ def main():
             key = (submission.get("titleSlug") or submission.get("title"), submission_language(submission))
             if key in seen_problem_lang:
                 continue
-            seen_problem_lang.add(key)
 
             if submission.get("code"):
                 details = {
@@ -381,6 +380,7 @@ def main():
                     title = submission.get("titleSlug") or submission.get("title") or "unknown problem"
                     print(f"Skipped {title}: {exc}", flush=True)
                     continue
+            seen_problem_lang.add(key)
             changed, path = write_submission(destination, submission, details)
             checked += 1
             if changed:
