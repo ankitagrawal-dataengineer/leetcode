@@ -1,21 +1,28 @@
-WITH partition_product_id AS (
-    SELECT *,
-           DENSE_RANK() OVER (
-               PARTITION BY product_id
-               ORDER BY change_date DESC
-           ) AS rk
-    FROM Products
-    WHERE change_date <= '2019-08-16'
+with cte as(
+    select distinct
+        product_id,
+        new_price as price,
+        dense_rank() over(
+            partition by product_id
+            order by change_date desc
+        ) as product_partition
+        from products
+        where change_date<='2019-08-16'
 )
+select
+    product_id,
+    price 
+from cte
+where product_partition=1
 
-SELECT product_id, new_price AS price
-FROM partition_product_id
-where rk=1
+union
 
-UNION
-
-Select product_id,10 as price
-from products 
-where product_id not in (
-    select product_id from partition_product_id
-);
+select 
+    product_id,
+    10 as price
+from products
+where product_id not in(
+    select
+        product_id
+    from cte
+)

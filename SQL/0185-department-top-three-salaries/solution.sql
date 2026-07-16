@@ -1,6 +1,18 @@
-SELECT t1.Department, t1.Employee, t1.Salary
-FROM (SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary,
-DENSE_RANK() OVER(PARTITION BY d.id ORDER BY salary DESC) AS rk
-FROM Department AS d
-JOIN Employee AS e ON E.departmentId = d.id) AS t1
-WHERE rk<=3
+with cte as(
+    select d.name as Department,
+    e.name as Employee,
+    e.salary as Salary,
+    dense_rank() over(
+        partition by d.id
+        order by e.salary desc
+        ) as rank_salary
+    from employee e
+    join department d
+        on e.departmentid=d.id
+)
+select
+    Department,
+    Employee,
+    Salary
+from cte
+where rank_salary<=3;
