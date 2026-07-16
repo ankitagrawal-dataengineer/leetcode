@@ -375,7 +375,7 @@ def main():
             else:
                 try:
                     details = fetch_submission_details(http, headers, submission["id"])
-                except MissingSubmissionCodeError as exc:
+                except LeetCodeSyncError as exc:
                     skipped += 1
                     title = submission.get("titleSlug") or submission.get("title") or "unknown problem"
                     print(f"Skipped {title}: {exc}", flush=True)
