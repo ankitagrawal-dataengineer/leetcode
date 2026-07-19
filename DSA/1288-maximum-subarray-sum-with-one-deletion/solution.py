@@ -13,5 +13,5 @@ class Solution(object):
             v4=nopower
             nopower=max(v1,v2)
             power=max(v3,v4)
-            res=max(res,nopower,power)
+            res=max(res,max(nopower,power))
         return res

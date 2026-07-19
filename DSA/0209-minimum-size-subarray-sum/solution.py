@@ -6,16 +6,15 @@ class Solution(object):
         :rtype: int
         """
         n=len(nums)
-        low,window_sum=0,0
-        res=float('inf')
+        window_sum,low,min_len=0,0,float('inf')
         for high in range(n):
             window_sum+=nums[high]
             while window_sum>=target:
                 length=high-low+1
-                res=min(res,length)
+                min_len=min(min_len,length)
                 window_sum-=nums[low]
                 low+=1
-        if res==float('inf'):
+        if min_len==float('inf'):
             return 0
         else:
-            return res
+            return min_len

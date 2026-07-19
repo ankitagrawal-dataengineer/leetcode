@@ -2,17 +2,12 @@ class Solution(object):
     def fun(self,n):
         s=0
         while n>0:
-            r=n%10
-            s=s+r*r
+            d=n%10
+            s=s+d*d
             n=n//10
         return s
 
-
     def isHappy(self, n):
-        """
-        :type n: int
-        :rtype: bool
-        """ 
         slow=fast=n
         while fast!=1:
             slow=self.fun(slow)
