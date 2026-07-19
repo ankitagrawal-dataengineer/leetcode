@@ -8,7 +8,6 @@ class Solution(object):
         nums.sort()
         n=len(nums)
         max_diff=float('inf')
-        res_sum=0
         for i in range(n-2):
             left=i+1
             right=n-1
@@ -18,8 +17,10 @@ class Solution(object):
                 if max_diff>diff:
                     max_diff=diff
                     res_sum=s
-                elif s<target:
+                if s<target:
                     left+=1
-                else:
+                elif s>target:
                     right-=1
+                else:
+                    return s
         return res_sum
