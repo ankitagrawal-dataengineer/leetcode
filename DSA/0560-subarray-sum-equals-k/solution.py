@@ -5,15 +5,12 @@ class Solution(object):
         :type k: int
         :rtype: int
         """
-        count=0
-        sums=0
         d=dict()
         d[0]=1
+        count,s=0,0
         for i in range(len(nums)):
-            sums+=nums[i]
-            ques=sums-k
+            s+=nums[i]
+            ques=s-k
             count+=d.get(ques,0)
-            d[sums]=d.get(sums,0)+1
+            d[s]=d.get(s,0)+1
         return count
-
-

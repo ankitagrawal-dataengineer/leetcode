@@ -5,13 +5,11 @@ class Solution(object):
         :type k: int
         :rtype: int
         """
-        sums=0
         d=dict()
-        d[0]=1
-        res=0
+        d[0],s,res=1,0,0
         for i in range(len(nums)):
-            sums+=nums[i]
-            rem=sums%k
+            s+=nums[i]
+            rem=s%k
             if rem<0:
                 rem+=k
             res+=d.get(rem,0)
