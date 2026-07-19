@@ -16,7 +16,6 @@ class Solution(object):
         while cm:
             if cm.val==off.val:
                 cm=cm.next
-                continue
             else:
                 off.next.val=cm.val
                 off=off.next
