@@ -8,16 +8,8 @@ class Solution(object):
             prev=curr
             curr=nxt
             times-=1
-    
-    # prev = new head
-    # head = new tail
-    # curr = next group's first node
 
     def reverseKGroup(self, head, k):
-        """
-        :type head: Optional[ListNode]
-        :rtype: Optional[ListNode]
-        """
         if not head:
             return head
 

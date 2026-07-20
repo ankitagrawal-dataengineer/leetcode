@@ -11,26 +11,21 @@ class Solution(object):
         :type right: int
         :rtype: Optional[ListNode]
         """
-        if not head or left==right:
+        if not head and left==right:
             return head
-        
-        t=head
-        before=None
-        pos=1
+        pos,t,before=1,head,None
         while pos<left:
             before=t
             t=t.next
             pos+=1
             continue
-        
-        curr=t
-        prev=None
         times=right-left+1
-        while times>0:
-            next=curr.next
+        curr,prev=t,None
+        while times:
+            nxt=curr.next
             curr.next=prev
             prev=curr
-            curr=next
+            curr=nxt
             times-=1
         t.next=curr
         if before:

@@ -16,7 +16,7 @@ class Solution(object):
                 if freq[s[low]]==0:
                     del freq[s[low]]
                 low+=1
-                k=high-low+1
+                k=high-low+1.
             length=high-low+1
             res=max(res,length)
         return res
