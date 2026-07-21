@@ -4,17 +4,14 @@ class Solution(object):
         :type text: str
         :rtype: int
         """
-        have,need={},{}
+        need,have={},{}
         res=float('inf')
-        for i in range(len(text)):
-            have[text[i]]=have.get(text[i],0)+1
+        for ch in text:
+            have[ch]=have.get(ch,0)+1
         bal='balloon'
-        for i in range(len(bal)):
-            need[bal[i]]=need.get(bal[i],0)+1
-        for ch in need:
-            if ch not in have:
-                return 0
-            else:
-                res = min(res, have[ch] // need[ch])
-        return res
+        for ch in bal:
+            need[ch]=need.get(ch,0)+1
         
+        for ch in need:
+            res=min(res,have.get(ch,0)//need[ch])
+        return res
