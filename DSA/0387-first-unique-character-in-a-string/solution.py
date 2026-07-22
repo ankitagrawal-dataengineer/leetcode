@@ -1,9 +1,9 @@
 class Solution(object):
     def firstUniqChar(self, s):
         freq={}
+        for ch in s:
+            freq[ch]=freq.get(ch,0)+1
         for i in range(len(s)):
-            freq[s[i]]=freq.get(s[i],0)+1
-        for i,ch in enumerate(s):
-            if freq[ch]==1:
+            if freq[s[i]]==1:
                 return i
         return -1
