@@ -14,13 +14,11 @@ class Solution(object):
             while left<right:
                 s=nums[i]+nums[left]+nums[right]
                 diff=abs(s-target)
-                if max_diff>diff:
+                if diff<max_diff:
                     max_diff=diff
                     res_sum=s
                 if s<target:
                     left+=1
-                elif s>target:
-                    right-=1
                 else:
-                    return s
+                    right-=1
         return res_sum
