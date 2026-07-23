@@ -10,10 +10,10 @@ class Solution(object):
         while i<=j:
             isq=nums[i]*nums[i]
             jsq=nums[j]*nums[j]
-            if isq>=jsq:
+            if isq>jsq:
                 res[k]=isq
                 i+=1
-            elif isq<=jsq:
+            else:
                 res[k]=jsq
                 j-=1
             k-=1
