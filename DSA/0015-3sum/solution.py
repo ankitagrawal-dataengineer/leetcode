@@ -25,8 +25,6 @@ class Solution(object):
                         right-=1
                 elif s<target:
                     left+=1
-                elif s>target:
+                else:
                     right-=1
-        return res
-                    
-                
+        return res  
